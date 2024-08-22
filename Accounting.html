@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>บันทึกการซื้อขาย</title>
+      
+    <!-- โหลดฟ้อนต์ Prompt จาก Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- ลิงก์ไปยังไฟล์ CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script src="js/xlsx.full.min.js"></script>
+    <style>
+/* ปรับการใช้งานฟ้อนต์และพื้นฐาน */
+body {
+    font-family: 'Prompt', sans-serif;
+    font-size: 11px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    background-color: #f9f9f9;
+}
+
+/* การจัดรูปแบบของหัวข้อ */
+h2, h3 {
+    font-weight: 600;
+    color: #333;
+}
+
+/* การจัดรูปแบบของส่วนที่มีป้ายกำกับ */
+#container {
+    display: flex;
+    background-color: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+#leftPane {
+    width: 70%;
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+#rightPane {
+    width: 30%;
+    padding: 15px;
+    box-sizing: border-box;
+    border-left: 1px solid #ddd;
+    background-color: #fafafa;
+}
+
+/* การจัดรูปแบบของปุ่ม */
+button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    margin: 5px 0;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* การจัดรูปแบบของลิงก์และแถวข้อมูล */
+.dateEntry, .gameEntry {
+    cursor: pointer;
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+    background-color: #fff;
+}
+
+.dateEntry:hover, .gameEntry:hover {
+    background-color: #e9ecef;
+}
+
+.dateEntry.selected, .gameEntry.selected {
+    background-color: #d0f0d0;
+    font-weight: bold;
+}
+
+/* การจัดรูปแบบของตาราง */
+#recordTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+#recordTable th, #recordTable td {
+    padding: 10px;
+    text-align: left;
+}
+
+#recordTable th {
+    background-color: #007bff;
+    color: #fff;
+    font-weight: bold;
+}
+
+#recordTable tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+#recordTable tbody tr:hover {
+    background-color: #e0e0e0;
+}
+
+/* การจัดรูปแบบของส่วนสรุป */
+#summarySection div {
+    margin-top: 10px;
+    font-size: 11px;
+}
+
+/* การจัดรูปแบบของแผงควบคุม */
+#controlPanel {
+    border-top: 2px solid #ddd;
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f8f9fa;
+}
+
+#controlPanel h3 {
+    margin-bottom: 10px;
+}
+
+#controlPanel button, #controlPanel input[type="file"] {
+    margin: 5px 0;
+}
+
+    </style>
+</head>
+<body>
+    <h2>บันทึกการซื้อขาย</h2>
+    <div id="container">
+        <div id="leftPane">
+            <h3 id="selectedGameHeader" style="margin-bottom: 10px;">เลือกหมวดหมู่เกม:</h3>
+            <div id="gameList">
+                <!-- รายการหมวดหมู่เกมจะแสดงที่นี่ -->
+            </div>
+            <button id="addGameListBtn">เพิ่มหมวดหมู่เกม</button>
+            <button id="createTodayRecordBtn">สร้างบันทึกสำหรับวันนี้</button>
+            <h3 id="selectedDateHeader" style="margin: 20px 0 10px;">ข้อมูลสำหรับวันที่: </h3>
+            <!-- ส่วนตารางบันทึกข้อมูล -->
+            <div id="summarySection">
+                <table id="recordTable" border="1">
+                    <thead>
+                        <tr>
+                            <th>ประเภท</th>
+                            <th>ชื่อสินค้า</th>
+                            <th>จำนวน</th>
+                            <th>ราคา</th>
+                            <th>เวลา</th>
+                            <th>การดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- แถวข้อมูล -->
+                    </tbody>
+                </table>
+                <div>
+                    <strong>ยอดซื้อทั้งหมด: </strong> <span id="totalBuy">0</span>
+                </div>
+                <div>
+                    <strong>ยอดขายทั้งหมด: </strong> <span id="totalSell">0</span>
+                </div>
+                <div>
+                    <strong>ยอดสุทธิ: </strong> <span id="netTotal">0</span>
+                </div>
+            </div>
+            
+            <button id="addRowBtn">เพิ่มแถวใหม่</button>
+            <button id="exportPngBtn">สรุปรายการเป็น PNG</button>
+
+            <!-- Control Panel Section -->
+            <div id="controlPanel">
+                <h3>Control Panel</h3>
+                <button id="exportExcelBtn">ส่งออกเป็น Excel</button><br>
+                <input type="file" id="importExcelBtn" accept=".xlsx" /><br>
+                <button id="resetAllBtn">รีเซ็ตทั้งหมด</button>
+            </div>
+        </div>
+        <div id="rightPane">
+            <h3>บันทึกที่บันทึกไว้</h3>
+            <div id="dateList">
+                <!-- รายการวันที่จะถูกเพิ่มที่นี่ -->
+            </div>
+        </div>
+    </div>
+    <!-- ลิงก์ไปยังไฟล์ JavaScript -->
+    <script src="js/scripts.js"></script>
+
+    <footer style="text-align: center; padding: 10px; border-top: 1px solid #ccc; margin-top: 20px;">
+        <p>Site Code by FangZa</p>
+    </footer>
+</body>
+</html>
